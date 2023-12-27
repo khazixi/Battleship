@@ -15,7 +15,7 @@ import (
 
 type ClientStore struct {
 	connected bool
-	activeID  uint64
+	activeID  int
 }
 
 func main() {
@@ -24,6 +24,7 @@ func main() {
 	gob.Register(util.JoinAction{})
 	gob.Register(util.RoomMessage{})
 	gob.Register(util.CreateAction{})
+  gob.Register(util.ConfirmationMessage{})
 
 	conn, err := net.Dial("tcp", ":8080")
 	if err != nil {
@@ -46,17 +47,26 @@ func main() {
 		for {
 			decoder := gob.NewDecoder(conn)
 			message, err := messageDecoder(decoder)
+
 			if err != nil {
         fmt.Println(err)
 				continue
 			}
+
 			switch vm := message.(type) {
 			case util.RoomMessage:
 				if !store.connected {
 					store.activeID = vm.RoomID
 					store.connected = true
 
-          fmt.Println("Created A Room with id ", vm.RoomID)
+          fmt.Print(vm)
+				}
+      case util.ConfirmationMessage:
+				if !store.connected {
+					store.activeID = vm.RoomID
+					store.connected = true
+
+          fmt.Print(vm)
 				}
 			}
 		}
@@ -72,7 +82,7 @@ shell:
 		fmt.Println(readable)
 
 		switch {
-		case readable == "rooms":
+		case strings.HasPrefix(readable, "rooms"):
 			actionEncoder(encoder, util.CreateListAction(1))
 		case strings.HasPrefix(readable, "create"):
 			if !store.connected {
@@ -90,9 +100,9 @@ shell:
 				continue
 			}
 			if !store.connected {
-				actionEncoder(encoder, util.CreateJoinAction(1, uint64(v)))
+				actionEncoder(encoder, util.CreateJoinAction(1, v))
 			}
-		case readable == "quit":
+		case strings.HasPrefix(readable, "quit"):
 			break shell
 		default:
 			fmt.Println("Not an action")

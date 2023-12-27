@@ -14,7 +14,7 @@ const (
 
 type JoinAction struct {
 	event  ActionType
-	RoomID uint64
+	RoomID int
 	ID     int
 }
 
@@ -32,7 +32,7 @@ func (a JoinAction) getEvent() ActionType {
 	return a.event
 }
 
-func CreateJoinAction(id int, roomID uint64) JoinAction {
+func CreateJoinAction(id int, roomID int) JoinAction {
 	return JoinAction{event: Join, ID: id, RoomID: roomID}
 }
 
@@ -51,4 +51,3 @@ func (l ListAction) getEvent() ActionType {
 func CreateListAction(id int) ListAction {
 	return ListAction{event: List, ID: id}
 }
-

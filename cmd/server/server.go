@@ -32,6 +32,7 @@ func main() {
 	log.Println("Connection Established")
 
   gob.Register(util.RoomMessage{})
+  gob.Register(util.ConfirmationMessage{})
 	gob.Register(util.JoinAction{})
 	gob.Register(util.ListAction{})
 	gob.Register(util.CreateAction{})
@@ -44,11 +45,12 @@ func main() {
 			log.Fatal("An Error occured ", err)
 		}
 
-    handleConnection(conn)
+    go handleConnection(conn)
 	}
 }
 
 func handleConnection(conn net.Conn) {
+  log.Println("Launched")
 	defer conn.Close()
 
 	for {
@@ -66,14 +68,25 @@ func handleConnection(conn net.Conn) {
     switch currentAction := abcd.(type) {
 		case util.CreateAction:
       log.Println("This is a creation")
-      roomID := util.CreateRoom(&roomList)
+      roomID := util.CreateRoom(&roomList, conn)
       // err = encoder.Encode(util.CreateRoomMessage(roomID))
       messageEncoder(encoder, util.CreateRoomMessage(roomID))
       if err != nil {
         log.Println("Error with sending the message")
       }
 		case util.JoinAction:
-      util.JoinRoom(&roomList, currentAction.RoomID)
+      util.JoinRoom(&roomList, currentAction.RoomID, conn)
+      r, ok := roomList.Load(currentAction.RoomID)
+      if !ok {
+        continue
+      }
+      r_unwrapped, ok := r.(util.Room)
+      if !ok {
+        continue
+      }
+      host_enc := gob.NewEncoder(r_unwrapped.Host)
+      messageEncoder(host_enc, util.CreateConfirmationMessage(true, currentAction.RoomID))
+      messageEncoder(encoder, util.CreateConfirmationMessage(true, currentAction.RoomID))
 			log.Println("This is an Join")
 		case util.ListAction:
 			log.Println("This is a List")

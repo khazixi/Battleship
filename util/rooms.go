@@ -2,6 +2,7 @@ package util
 
 import (
 	"math/rand"
+	"net"
 	"sync"
 )
 
@@ -16,32 +17,37 @@ const (
 type RoomList sync.Map
 
 type Room struct {
-	State RoomState
+	State       RoomState
+	Host        net.Conn
+	Participant net.Conn
 }
 
-func CreateRoom(roomList * sync.Map) uint64 {
-	roomID := rand.Uint64()
-  _, ok := roomList.Load(roomID)
-  
-  for ok {
-    roomID = rand.Uint64()
-    _, ok = roomList.Load(roomID)
-  }
+func CreateRoom(roomList *sync.Map, host net.Conn) int {
+	roomID := rand.Int()
+	_, ok := roomList.Load(roomID)
 
-  roomList.Store(roomID, Room{State: OPEN})
+	for ok {
+		roomID = rand.Int()
+		_, ok = roomList.Load(roomID)
+	}
 
-  return roomID
+	roomList.Store(roomID, Room{State: OPEN, Host: host})
+
+	return roomID
 }
 
-func JoinRoom(roomList * sync.Map, roomID uint64) {
-  v, ok := roomList.Load(roomID)
-  if !ok {
-    return
-  }
-  room, ok := v.(Room)
-  if !ok {
-    return
-  }
-  room.State = FULL
-  roomList.Store(roomID, room)
+func JoinRoom(roomList *sync.Map, roomID int, participant net.Conn) {
+	v, ok := roomList.Load(roomID)
+	if !ok {
+		return
+	}
+	room, ok := v.(Room)
+	if !ok {
+		return
+	}
+
+	room.State = FULL
+  room.Participant = participant
+
+	roomList.Store(roomID, room)
 }
