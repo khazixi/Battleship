@@ -46,7 +46,7 @@ func main() {
 	go func() {
 		for {
 			decoder := gob.NewDecoder(conn)
-			message, err := messageDecoder(decoder)
+			message, err := util.MessageDecoder(decoder)
 
 			if err != nil {
 				fmt.Println(err)
@@ -82,10 +82,10 @@ shell:
 
 		switch {
 		case strings.HasPrefix(readable, "rooms"):
-			actionEncoder(encoder, util.ListAction{})
+			util.ActionEncoder(encoder, util.ListAction{})
 		case strings.HasPrefix(readable, "create"):
 			if !store.connected {
-				actionEncoder(encoder, util.CreateAction{})
+				util.ActionEncoder(encoder, util.CreateAction{})
 			}
 		case strings.HasPrefix(readable, "join"):
 			c := strings.Split(readable, " ")
@@ -99,7 +99,7 @@ shell:
 				continue
 			}
 			if !store.connected {
-        actionEncoder(encoder, util.JoinAction{RoomID: v})
+				util.ActionEncoder(encoder, util.JoinAction{RoomID: v})
 			}
 		case strings.HasPrefix(readable, "quit"):
 			break shell
@@ -109,15 +109,3 @@ shell:
 	}
 }
 
-func actionEncoder(enc *gob.Encoder, a util.Action) {
-	err := enc.Encode(&a)
-	if err != nil {
-		log.Fatal("Failed to encode", err)
-	}
-}
-
-func messageDecoder(dec *gob.Decoder) (util.Message, error) {
-	var message util.Message
-	err := dec.Decode(&message)
-	return message, err
-}

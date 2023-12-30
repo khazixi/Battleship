@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"sync"
 
 	"github.com/khazixi/Battelship/util"
 )
@@ -46,15 +45,15 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 	var roomID int = -1
 
 	defer func() {
-    if roomID != -1 {
-      msgch <- util.DeleteMessage{RoomID: roomID}
-    }
-    conn.Close()
-  }()
+		if roomID != -1 {
+			msgch <- util.DeleteMessage{RoomID: roomID}
+		}
+		conn.Close()
+	}()
 
 	for {
 		decoder := gob.NewDecoder(conn)
-		abcd, err := actionDecoder(decoder)
+		abcd, err := util.ActionDecoder(decoder)
 
 		if err != nil {
 			if err != io.EOF {
@@ -86,57 +85,41 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 }
 
 func gameLoop(msgch chan util.Message) {
-	roomList := sync.Map{}
+	var roomList util.RoomList = util.MakeRoomList()
 	for {
 		select {
 		case m := <-msgch:
 			switch message := m.(type) {
 			case util.CreateMessage:
-				util.CreateRoom(&roomList, message.Conn)
+				roomList.CreateRoom(message.Conn)
 			case util.JoinMessage:
-				host, err := util.JoinRoom(&roomList, message.RoomID, message.Conn)
+				host, err := roomList.JoinRoom(message.RoomID, message.Conn)
 				enc := gob.NewEncoder(message.Conn)
 				if err != nil {
-					messageEncoder(enc, util.ConfirmationMessage{
+					util.MessageEncoder(enc, util.ConfirmationMessage{
 						Joined: false,
 						RoomID: message.RoomID,
 					})
 				}
 				host_enc := gob.NewEncoder(host)
-				messageEncoder(enc, util.ConfirmationMessage{
+				util.MessageEncoder(enc, util.ConfirmationMessage{
 					Joined: true,
 					RoomID: message.RoomID,
 				})
-				messageEncoder(host_enc, util.ConfirmationMessage{
+				util.MessageEncoder(host_enc, util.ConfirmationMessage{
 					Joined: true,
 					RoomID: message.RoomID,
 				})
 			case util.DeleteMessage:
-				roomList.Delete(message.RoomID)
+				roomList.RemoveRoom(message.RoomID)
 			case util.ListMessage:
-				rooms := util.GetRooms(&roomList)
+				rooms := roomList.GetRooms()
 				enc := gob.NewEncoder(message.Conn)
-				messageEncoder(enc, util.RoomsMessage{Rooms: rooms})
+				util.MessageEncoder(enc, util.RoomsMessage{Rooms: rooms})
 			case util.ClearMessage:
-				roomList.Range(func(key, value any) bool {
-					roomList.Delete(key)
-					return true
-				})
+				roomList.ClearRooms()
 			}
 
 		}
 	}
-}
-
-func messageEncoder(enc *gob.Encoder, m util.Message) {
-	err := enc.Encode(&m)
-	if err != nil {
-		log.Fatal("Failed to encode", err)
-	}
-}
-
-func actionDecoder(dec *gob.Decoder) (util.Action, error) {
-	var a util.Action
-	err := dec.Decode(&a)
-	return a, err
 }

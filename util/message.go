@@ -1,6 +1,10 @@
 package util
 
-import "net"
+import (
+	"encoding/gob"
+	"log"
+	"net"
+)
 
 type MessageType int
 
@@ -9,10 +13,10 @@ const (
 	CONFIRM
 	CREATE
 	JOIN
-  CLEAR
-  LIST
-  ROOMS
-  DELETE
+	CLEAR
+	LIST
+	ROOMS
+	DELETE
 )
 
 type Message interface {
@@ -41,15 +45,15 @@ type ConfirmationMessage struct {
 }
 
 type CreateMessage struct {
-	Conn  net.Conn
+	Conn net.Conn
 }
 
 type ListMessage struct {
-  Conn net.Conn
+	Conn net.Conn
 }
 
 type RoomsMessage struct {
-  Rooms []int
+	Rooms []int
 }
 
 func (r RoomMessage) getType() MessageType {
@@ -73,13 +77,26 @@ func (c JoinMessage) getType() MessageType {
 }
 
 func (l ListMessage) getType() MessageType {
-  return LIST
+	return LIST
 }
 
 func (r RoomsMessage) getType() MessageType {
-  return ROOMS
+	return ROOMS
 }
 
 func (d DeleteMessage) getType() MessageType {
-  return DELETE
+	return DELETE
+}
+
+func MessageDecoder(dec *gob.Decoder) (Message, error) {
+	var message Message
+	err := dec.Decode(&message)
+	return message, err
+}
+
+func MessageEncoder(enc *gob.Encoder, m Message) {
+	err := enc.Encode(&m)
+	if err != nil {
+		log.Fatal("Failed to encode", err)
+	}
 }

@@ -4,7 +4,8 @@ import (
 	"errors"
 	"math/rand"
 	"net"
-	"sync"
+
+	"github.com/khazixi/Battelship/game"
 )
 
 type RoomState int
@@ -15,64 +16,68 @@ const (
 	FULL
 )
 
-type RoomList sync.Map
-
 type Room struct {
 	State       RoomState
 	Host        net.Conn
 	Participant net.Conn
-	Game        Game
+	Game        game.Game
 }
 
-func CreateRoom(roomList *sync.Map, host net.Conn) int {
+type RoomList struct {
+	m map[int]Room
+}
+
+func MakeRoomList() RoomList {
+	return RoomList{m: make(map[int]Room)}
+}
+
+func (r *RoomList) CreateRoom(host net.Conn) int {
 	roomID := rand.Int()
-	_, ok := roomList.Load(roomID)
+	_, ok := r.m[roomID]
 
 	for ok {
 		roomID = rand.Int()
-		_, ok = roomList.Load(roomID)
+		_, ok = r.m[roomID]
 	}
 
-	roomList.Store(roomID, Room{State: OPEN, Host: host})
-
+	r.m[roomID] = Room{State: OPEN, Host: host}
 	return roomID
 }
 
-func JoinRoom(roomList *sync.Map, roomID int, participant net.Conn) (net.Conn, error) {
-	v, ok := roomList.Load(roomID)
+func (r *RoomList) JoinRoom(roomID int, participant net.Conn) (net.Conn, error) {
+	room, ok := r.m[roomID]
 	if !ok {
 		return nil, errors.New("Attempted to join an empty room")
-	}
-	room, ok := v.(Room)
-	if !ok {
-		return nil, errors.New("Room contained an incorrect type")
 	}
 
 	room.State = FULL
 	room.Participant = participant
 
-	roomList.Store(roomID, room)
+	r.m[roomID] = room
 	return room.Host, nil
 }
 
-func GetRooms(roomList *sync.Map) []int {
+func (r *RoomList) GetRooms() []int {
 	iterated := 0
 	rooms := make([]int, 10)
-	roomList.Range(func(key, value any) bool {
-		pk, ok := key.(int)
-		if !ok {
-			return true
+	for k, v := range r.m {
+		if v.State == OPEN {
+			rooms = append(rooms, k)
+			iterated += 1
 		}
 
-		_, ok = value.(Room)
-		if !ok {
-			return true
+		if iterated == 10 {
+			break
 		}
-
-		rooms = append(rooms, pk)
-
-		return iterated < 11
-	})
+	}
 
 	return rooms
+}
+
+func (r *RoomList) RemoveRoom(roomID int) {
+  delete(r.m, roomID) 
+}
+
+func (r *RoomList) ClearRooms() {
+  clear(r.m)
 }
