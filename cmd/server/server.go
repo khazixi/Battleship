@@ -10,8 +10,6 @@ import (
 	"github.com/khazixi/Battelship/util"
 )
 
-var roomList sync.Map = sync.Map{}
-
 func main() {
 	serv, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -31,7 +29,7 @@ func main() {
 	// NOTE: Naive Implimentation prone to race conditions
 	msgch := make(chan util.Message)
 
-  go gameLoop(msgch)
+	go gameLoop(msgch)
 
 	for {
 		conn, err := serv.Accept()
@@ -45,13 +43,17 @@ func main() {
 
 func handleConnection(conn net.Conn, msgch chan util.Message) {
 	log.Println("Launched")
+	var roomID int = -1
 
-	defer conn.Close()
-	var roomID int
+	defer func() {
+    if roomID != -1 {
+      msgch <- util.DeleteMessage{RoomID: roomID}
+    }
+    conn.Close()
+  }()
 
 	for {
 		decoder := gob.NewDecoder(conn)
-		encoder := gob.NewEncoder(conn)
 		abcd, err := actionDecoder(decoder)
 
 		if err != nil {
@@ -63,33 +65,20 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 
 		switch currentAction := abcd.(type) {
 		case util.CreateAction:
+			msgch <- util.CreateMessage{Conn: conn}
 			log.Println("This is a creation")
-			// err = encoder.Encode(util.CreateRoomMessage(roomID))
 		case util.JoinAction:
 			roomID = currentAction.RoomID
 			msgch <- util.JoinMessage{RoomID: roomID}
-			// TODO: Impliment a way for the connection to know whether it joined the room
-
-			util.JoinRoom(&roomList, currentAction.RoomID, conn)
-			r, ok := roomList.Load(currentAction.RoomID)
-			if !ok {
-				continue
-			}
-			r_unwrapped, ok := r.(util.Room)
-			if !ok {
-				continue
-			}
-			host_enc := gob.NewEncoder(r_unwrapped.Host)
-			msg := util.ConfirmationMessage{
-				Joined: true,
-				RoomID: currentAction.RoomID,
-			}
-			messageEncoder(host_enc, msg)
-			messageEncoder(encoder, msg)
 			log.Println("This is an Join")
 		case util.ListAction:
 			msgch <- util.ListMessage{Conn: conn}
 			log.Println("This is a List")
+		case util.DeleteAction:
+			msgch <- util.DeleteMessage{
+				Conn:   conn,
+				RoomID: currentAction.RoomID,
+			}
 		default:
 			log.Println("This type is unknown", abcd)
 		}
@@ -105,7 +94,7 @@ func gameLoop(msgch chan util.Message) {
 			case util.CreateMessage:
 				util.CreateRoom(&roomList, message.Conn)
 			case util.JoinMessage:
-        host, err := util.JoinRoom(&roomList, message.RoomID, message.Conn)
+				host, err := util.JoinRoom(&roomList, message.RoomID, message.Conn)
 				enc := gob.NewEncoder(message.Conn)
 				if err != nil {
 					messageEncoder(enc, util.ConfirmationMessage{
@@ -113,7 +102,7 @@ func gameLoop(msgch chan util.Message) {
 						RoomID: message.RoomID,
 					})
 				}
-        host_enc := gob.NewEncoder(host)
+				host_enc := gob.NewEncoder(host)
 				messageEncoder(enc, util.ConfirmationMessage{
 					Joined: true,
 					RoomID: message.RoomID,
@@ -122,12 +111,17 @@ func gameLoop(msgch chan util.Message) {
 					Joined: true,
 					RoomID: message.RoomID,
 				})
-			case util.CloseMessage:
+			case util.DeleteMessage:
 				roomList.Delete(message.RoomID)
 			case util.ListMessage:
 				rooms := util.GetRooms(&roomList)
 				enc := gob.NewEncoder(message.Conn)
 				messageEncoder(enc, util.RoomsMessage{Rooms: rooms})
+			case util.ClearMessage:
+				roomList.Range(func(key, value any) bool {
+					roomList.Delete(key)
+					return true
+				})
 			}
 
 		}

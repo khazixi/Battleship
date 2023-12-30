@@ -9,8 +9,10 @@ const (
 	CONFIRM
 	CREATE
 	JOIN
-	CLOSED
+  CLEAR
   LIST
+  ROOMS
+  DELETE
 )
 
 type Message interface {
@@ -21,12 +23,14 @@ type RoomMessage struct {
 	RoomID int
 }
 
+type ClearMessage struct{}
+
 type JoinMessage struct {
 	RoomID int
 	Conn   net.Conn
 }
 
-type CloseMessage struct {
+type DeleteMessage struct {
 	RoomID int
 	Conn   net.Conn
 }
@@ -44,6 +48,10 @@ type ListMessage struct {
   Conn net.Conn
 }
 
+type RoomsMessage struct {
+  Rooms []int
+}
+
 func (r RoomMessage) getType() MessageType {
 	return ROOM
 }
@@ -52,8 +60,8 @@ func (c ConfirmationMessage) getType() MessageType {
 	return CONFIRM
 }
 
-func (c CloseMessage) getType() MessageType {
-	return CLOSED
+func (c ClearMessage) getType() MessageType {
+	return CLEAR
 }
 
 func (c CreateMessage) getType() MessageType {
@@ -66,4 +74,12 @@ func (c JoinMessage) getType() MessageType {
 
 func (l ListMessage) getType() MessageType {
   return LIST
+}
+
+func (r RoomsMessage) getType() MessageType {
+  return ROOMS
+}
+
+func (d DeleteMessage) getType() MessageType {
+  return DELETE
 }

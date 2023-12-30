@@ -21,6 +21,7 @@ type Room struct {
 	State       RoomState
 	Host        net.Conn
 	Participant net.Conn
+	Game        Game
 }
 
 func CreateRoom(roomList *sync.Map, host net.Conn) int {
@@ -48,30 +49,30 @@ func JoinRoom(roomList *sync.Map, roomID int, participant net.Conn) (net.Conn, e
 	}
 
 	room.State = FULL
-  room.Participant = participant
+	room.Participant = participant
 
 	roomList.Store(roomID, room)
-  return room.Host, nil
+	return room.Host, nil
 }
 
 func GetRooms(roomList *sync.Map) []int {
-  iterated := 0
-  rooms := make([]int, 10)
-  roomList.Range(func(key, value any) bool {
-    pk, ok := key.(int)
-    if !ok {
-      return true
-    }
+	iterated := 0
+	rooms := make([]int, 10)
+	roomList.Range(func(key, value any) bool {
+		pk, ok := key.(int)
+		if !ok {
+			return true
+		}
 
-    _, ok = value.(Room)
-    if !ok {
-      return true
-    }
+		_, ok = value.(Room)
+		if !ok {
+			return true
+		}
 
-    rooms = append(rooms, pk)
+		rooms = append(rooms, pk)
 
-    return iterated < 11
-  })
+		return iterated < 11
+	})
 
-  return rooms
+	return rooms
 }

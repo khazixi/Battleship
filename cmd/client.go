@@ -24,7 +24,7 @@ func main() {
 	gob.Register(util.JoinAction{})
 	gob.Register(util.RoomMessage{})
 	gob.Register(util.CreateAction{})
-  gob.Register(util.ConfirmationMessage{})
+	gob.Register(util.ConfirmationMessage{})
 
 	conn, err := net.Dial("tcp", ":8080")
 	if err != nil {
@@ -39,7 +39,7 @@ func main() {
 
 	var store ClientStore
 
-  fmt.Println(store)
+	fmt.Println(store)
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -49,7 +49,7 @@ func main() {
 			message, err := messageDecoder(decoder)
 
 			if err != nil {
-        fmt.Println(err)
+				fmt.Println(err)
 				continue
 			}
 
@@ -59,19 +59,18 @@ func main() {
 					store.activeID = vm.RoomID
 					store.connected = true
 
-          fmt.Print(vm)
+					fmt.Print(vm)
 				}
-      case util.ConfirmationMessage:
+			case util.ConfirmationMessage:
 				if !store.connected {
 					store.activeID = vm.RoomID
 					store.connected = true
 
-          fmt.Print(vm)
+					fmt.Print(vm)
 				}
 			}
 		}
 	}()
-
 
 shell:
 	for {
@@ -83,10 +82,10 @@ shell:
 
 		switch {
 		case strings.HasPrefix(readable, "rooms"):
-			actionEncoder(encoder, util.CreateListAction(1))
+			actionEncoder(encoder, util.ListAction{})
 		case strings.HasPrefix(readable, "create"):
 			if !store.connected {
-				actionEncoder(encoder, util.CreateCreateAction(1))
+				actionEncoder(encoder, util.CreateAction{})
 			}
 		case strings.HasPrefix(readable, "join"):
 			c := strings.Split(readable, " ")
@@ -100,7 +99,7 @@ shell:
 				continue
 			}
 			if !store.connected {
-				actionEncoder(encoder, util.CreateJoinAction(1, v))
+        actionEncoder(encoder, util.JoinAction{RoomID: v})
 			}
 		case strings.HasPrefix(readable, "quit"):
 			break shell

@@ -7,47 +7,32 @@ type Action interface {
 }
 
 const (
-	List = iota
+	List ActionType = iota
 	Create
 	Join
+	Delete
 )
 
-type JoinAction struct {
-	event  ActionType
-	RoomID int
-	ID     int
-}
+type JoinAction struct{ RoomID int }
 
-type CreateAction struct {
-	event ActionType
-	ID    int
-}
+type DeleteAction struct{ RoomID int }
 
-type ListAction struct {
-	event ActionType
-	ID    int
-}
+type CreateAction struct{}
+
+type ListAction struct{}
 
 func (a JoinAction) getEvent() ActionType {
-	return a.event
-}
-
-func CreateJoinAction(id int, roomID int) JoinAction {
-	return JoinAction{event: Join, ID: id, RoomID: roomID}
+	return Join
 }
 
 func (c CreateAction) getEvent() ActionType {
-	return c.event
-}
-
-func CreateCreateAction(id int) CreateAction {
-	return CreateAction{event: Create, ID: id}
+	return Create
 }
 
 func (l ListAction) getEvent() ActionType {
-	return l.event
+	return List
 }
 
-func CreateListAction(id int) ListAction {
-	return ListAction{event: List, ID: id}
+func (d DeleteAction) getEvent() ActionType {
+	return Delete
 }
