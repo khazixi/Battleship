@@ -1,6 +1,6 @@
 package util
 
-type Board [5][5]byte
+type Board [10][10]byte
 
 type Game struct {
   p1 Board

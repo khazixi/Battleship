@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"math/rand"
 	"net"
 	"sync"
@@ -36,18 +37,41 @@ func CreateRoom(roomList *sync.Map, host net.Conn) int {
 	return roomID
 }
 
-func JoinRoom(roomList *sync.Map, roomID int, participant net.Conn) {
+func JoinRoom(roomList *sync.Map, roomID int, participant net.Conn) (net.Conn, error) {
 	v, ok := roomList.Load(roomID)
 	if !ok {
-		return
+		return nil, errors.New("Attempted to join an empty room")
 	}
 	room, ok := v.(Room)
 	if !ok {
-		return
+		return nil, errors.New("Room contained an incorrect type")
 	}
 
 	room.State = FULL
   room.Participant = participant
 
 	roomList.Store(roomID, room)
+  return room.Host, nil
+}
+
+func GetRooms(roomList *sync.Map) []int {
+  iterated := 0
+  rooms := make([]int, 10)
+  roomList.Range(func(key, value any) bool {
+    pk, ok := key.(int)
+    if !ok {
+      return true
+    }
+
+    _, ok = value.(Room)
+    if !ok {
+      return true
+    }
+
+    rooms = append(rooms, pk)
+
+    return iterated < 11
+  })
+
+  return rooms
 }

@@ -1,10 +1,16 @@
 package util
 
+import "net"
+
 type MessageType int
 
 const (
 	ROOM MessageType = iota
 	CONFIRM
+	CREATE
+	JOIN
+	CLOSED
+  LIST
 )
 
 type Message interface {
@@ -12,35 +18,52 @@ type Message interface {
 }
 
 type RoomMessage struct {
-	messageType MessageType
-	RoomID      int
+	RoomID int
+}
+
+type JoinMessage struct {
+	RoomID int
+	Conn   net.Conn
+}
+
+type CloseMessage struct {
+	RoomID int
+	Conn   net.Conn
 }
 
 type ConfirmationMessage struct {
-	messageType MessageType
-	Joined      bool
-	RoomID      int
+	Joined bool
+	RoomID int
 }
 
-func CreateRoomMessage(id int) RoomMessage {
-	return RoomMessage{
-		messageType: ROOM,
-		RoomID:      id,
-	}
+type CreateMessage struct {
+	Conn  net.Conn
 }
 
-func CreateConfirmationMessage(confirmed bool, id int) ConfirmationMessage {
-	return ConfirmationMessage{
-		messageType: CONFIRM,
-		Joined:      confirmed,
-		RoomID:      id,
-	}
+type ListMessage struct {
+  Conn net.Conn
 }
 
 func (r RoomMessage) getType() MessageType {
-	return r.messageType
+	return ROOM
 }
 
 func (c ConfirmationMessage) getType() MessageType {
-	return c.messageType
+	return CONFIRM
+}
+
+func (c CloseMessage) getType() MessageType {
+	return CLOSED
+}
+
+func (c CreateMessage) getType() MessageType {
+	return CREATE
+}
+
+func (c JoinMessage) getType() MessageType {
+	return JOIN
+}
+
+func (l ListMessage) getType() MessageType {
+  return LIST
 }
