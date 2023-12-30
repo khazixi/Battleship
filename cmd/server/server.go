@@ -31,6 +31,8 @@ func main() {
 	// NOTE: Naive Implimentation prone to race conditions
 	msgch := make(chan util.Message)
 
+  go gameLoop(msgch)
+
 	for {
 		conn, err := serv.Accept()
 		if err != nil {
@@ -94,12 +96,10 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 	}
 }
 
-func gameLoop(msgch chan util.Message, connCh chan bool) {
+func gameLoop(msgch chan util.Message) {
 	roomList := sync.Map{}
 	for {
 		select {
-		case <-connCh:
-			return
 		case m := <-msgch:
 			switch message := m.(type) {
 			case util.CreateMessage:
