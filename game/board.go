@@ -31,9 +31,15 @@ const (
 type Board [10][10]byte
 
 type Game struct {
-	p1         Board
-	p2         Board
+	P1         Board
+	P2         Board
 	PlayerTurn Turn
+}
+
+type Transmit struct {
+  Piece
+  Direction
+  Coordinate
 }
 
 func (p Piece) Size() int {

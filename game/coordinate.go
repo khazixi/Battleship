@@ -1,4 +1,4 @@
-package util
+package game
 
 import "errors"
 
@@ -6,8 +6,10 @@ type Coordinate interface {
 	getCoordinate() (Point, error)
 }
 
+type Instruction [2]byte
+
 type Point struct {
-	X, Y int
+	Y, X int
 }
 
 func (p Point) getCoordinate() (Point, error) {
@@ -17,4 +19,11 @@ func (p Point) getCoordinate() (Point, error) {
 		return Point{}, errors.New("Invalid Coorindate Placement")
 	}
 	return p, nil
+}
+
+func (i Instruction) getCoordinate() (Point, error) {
+	if ('A' <= i[0] && i[0] <= 'J') && ('0' <= i[1] && i[1] <= '9') {
+		return Point{X: int(i[1] - '0'), Y: int(i[1] - 'A')}, nil
+	}
+	return Point{}, errors.New("Invalid Insturction")
 }

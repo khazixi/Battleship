@@ -20,32 +20,32 @@ type Room struct {
 	State       RoomState
 	Host        net.Conn
 	Participant net.Conn
-	Game        game.Game
+	Game        *game.Game
 }
 
 type RoomList struct {
-	m map[int]Room
+	M map[int]Room
 }
 
 func MakeRoomList() RoomList {
-	return RoomList{m: make(map[int]Room)}
+	return RoomList{M: make(map[int]Room)}
 }
 
 func (r *RoomList) CreateRoom(host net.Conn) int {
 	roomID := rand.Int()
-	_, ok := r.m[roomID]
+	_, ok := r.M[roomID]
 
 	for ok {
 		roomID = rand.Int()
-		_, ok = r.m[roomID]
+		_, ok = r.M[roomID]
 	}
 
-	r.m[roomID] = Room{State: OPEN, Host: host}
+	r.M[roomID] = Room{State: OPEN, Host: host}
 	return roomID
 }
 
 func (r *RoomList) JoinRoom(roomID int, participant net.Conn) (net.Conn, error) {
-	room, ok := r.m[roomID]
+	room, ok := r.M[roomID]
 	if !ok {
 		return nil, errors.New("Attempted to join an empty room")
 	}
@@ -53,14 +53,14 @@ func (r *RoomList) JoinRoom(roomID int, participant net.Conn) (net.Conn, error) 
 	room.State = FULL
 	room.Participant = participant
 
-	r.m[roomID] = room
+	r.M[roomID] = room
 	return room.Host, nil
 }
 
 func (r *RoomList) GetRooms() []int {
 	iterated := 0
 	rooms := make([]int, 10)
-	for k, v := range r.m {
+	for k, v := range r.M {
 		if v.State == OPEN {
 			rooms = append(rooms, k)
 			iterated += 1
@@ -75,9 +75,13 @@ func (r *RoomList) GetRooms() []int {
 }
 
 func (r *RoomList) RemoveRoom(roomID int) {
-  delete(r.m, roomID) 
+	delete(r.M, roomID)
 }
 
 func (r *RoomList) ClearRooms() {
-  clear(r.m)
+	clear(r.M)
+}
+
+func (r *RoomList) ProcessMessage(msg InitializerMessage) {
+
 }

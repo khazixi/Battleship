@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/khazixi/Battelship/game"
 	"github.com/khazixi/Battelship/util"
 )
 
@@ -110,6 +111,8 @@ func gameLoop(msgch chan util.Message) {
 					Joined: true,
 					RoomID: message.RoomID,
 				})
+        // WARNING: Maybe move this to its own message
+        roomList.M[message.RoomID].Game.PlayerTurn = game.PLAYER1
 			case util.DeleteMessage:
 				roomList.RemoveRoom(message.RoomID)
 			case util.ListMessage:
@@ -118,6 +121,14 @@ func gameLoop(msgch chan util.Message) {
 				util.MessageEncoder(enc, util.RoomsMessage{Rooms: rooms})
 			case util.ClearMessage:
 				roomList.ClearRooms()
+			case util.InitializerMessage:
+				for _, v := range message.Transmit {
+					if message.Conn == roomList.M[message.Room].Host {
+						roomList.M[message.Room].Game.P1.Place(v.Coordinate, v.Piece, v.Direction)
+					} else if (message.Conn == roomList.M[message.Room].Participant) {
+						roomList.M[message.Room].Game.P2.Place(v.Coordinate, v.Piece, v.Direction)
+          }
+				}
 			}
 
 		}

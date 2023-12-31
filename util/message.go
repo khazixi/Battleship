@@ -4,6 +4,8 @@ import (
 	"encoding/gob"
 	"log"
 	"net"
+
+	"github.com/khazixi/Battelship/game"
 )
 
 type MessageType int
@@ -17,6 +19,7 @@ const (
 	LIST
 	ROOMS
 	DELETE
+	INITIALIZE
 )
 
 type Message interface {
@@ -56,6 +59,12 @@ type RoomsMessage struct {
 	Rooms []int
 }
 
+type InitializerMessage struct {
+	Room     int
+	Conn     net.Conn
+	Transmit [5]game.Transmit
+}
+
 func (r RoomMessage) getType() MessageType {
 	return ROOM
 }
@@ -86,6 +95,10 @@ func (r RoomsMessage) getType() MessageType {
 
 func (d DeleteMessage) getType() MessageType {
 	return DELETE
+}
+
+func (i InitializerMessage) getType() MessageType {
+	return INITIALIZE
 }
 
 func MessageDecoder(dec *gob.Decoder) (Message, error) {
