@@ -1,15 +1,21 @@
 package main
 
 import (
-	"bufio"
 	"encoding/gob"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 
+	// "log"
+	// "net"
+	// "bufio"
+	// "os"
+	// "strconv"
+	// "strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/khazixi/Battelship/ui"
 	"github.com/khazixi/Battelship/util"
 )
 
@@ -26,86 +32,100 @@ func main() {
 	gob.Register(util.CreateAction{})
 	gob.Register(util.ConfirmationMessage{})
 
-	conn, err := net.Dial("tcp", ":8080")
-	if err != nil {
-		log.Fatalf("An error occured: %s\n", err)
-		return
-	}
+	// conn, err := net.Dial("tcp", ":8080")
+	// if err != nil {
+	// 	log.Fatalf("An error occured: %s\n", err)
+	// 	return
+	// }
+	//
+	// defer func() {
+	// 	log.Println("Closing Connection")
+	// 	conn.Close()
+	// }()
 
-	defer func() {
-		log.Println("Closing Connection")
-		conn.Close()
-	}()
+	// var store ClientStore
 
-	var store ClientStore
+	// fmt.Println(store)
 
-	fmt.Println(store)
+	// reader := bufio.NewReader(os.Stdin)
 
-	reader := bufio.NewReader(os.Stdin)
+	// go func() {
+	// 	for {
+	// 		decoder := gob.NewDecoder(conn)
+	// 		message, err := util.MessageDecoder(decoder)
+	//
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 			continue
+	// 		}
+	//
+	// 		switch vm := message.(type) {
+	// 		case util.RoomMessage:
+	// 			if !store.connected {
+	// 				store.activeID = vm.RoomID
+	// 				store.connected = true
+	//
+	// 				fmt.Print(vm)
+	// 			}
+	// 		case util.ConfirmationMessage:
+	// 			if !store.connected {
+	// 				store.activeID = vm.RoomID
+	// 				store.connected = true
+	//
+	// 				fmt.Print(vm)
+	// 			}
+	// 		}
+	// 	}
+	// }()
 
-	go func() {
-		for {
-			decoder := gob.NewDecoder(conn)
-			message, err := util.MessageDecoder(decoder)
+  // NOTE: Command Line Args should be used to pass the IP in the future
+  conn, err := net.Dial("tcp", ":8080")
+  if err != nil {
+    log.Fatal(err)
+  }
 
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
 
-			switch vm := message.(type) {
-			case util.RoomMessage:
-				if !store.connected {
-					store.activeID = vm.RoomID
-					store.connected = true
+  program := tea.NewProgram(ui.MakeModel(ui.MakeOption(conn)))
+  _, err = program.Run()
+  if err != nil {
+    fmt.Println("Failed to Create the UI")
+    os.Exit(1)
+  }
 
-					fmt.Print(vm)
-				}
-			case util.ConfirmationMessage:
-				if !store.connected {
-					store.activeID = vm.RoomID
-					store.connected = true
-
-					fmt.Print(vm)
-				}
-			}
-		}
-	}()
-
-shell:
-	for {
-		encoder := gob.NewEncoder(conn)
-		fmt.Print(">>> ")
-		readable, _ := reader.ReadString('\n')
-
-		fmt.Println(readable)
-
-		switch {
-		case strings.HasPrefix(readable, "rooms"):
-			util.ActionEncoder(encoder, util.ListAction{})
-		case strings.HasPrefix(readable, "create"):
-			if !store.connected {
-				util.ActionEncoder(encoder, util.CreateAction{})
-			}
-		case strings.HasPrefix(readable, "join"):
-			c := strings.Split(readable, " ")
-			if len(c) != 2 {
-				fmt.Println("Join takes 2 Arguments")
-				continue
-			}
-			v, err := strconv.Atoi(strings.TrimSpace(c[1]))
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			if !store.connected {
-				util.ActionEncoder(encoder, util.JoinAction{RoomID: v})
-			}
-		case strings.HasPrefix(readable, "quit"):
-			break shell
-		default:
-			fmt.Println("Not an action")
-		}
-	}
+// shell:
+// 	for {
+// 		encoder := gob.NewEncoder(conn)
+// 		fmt.Print(">>> ")
+// 		readable, _ := reader.ReadString('\n')
+//
+// 		fmt.Println(readable)
+//
+// 		switch {
+// 		case strings.HasPrefix(readable, "rooms"):
+// 			util.ActionEncoder(encoder, util.ListAction{})
+// 		case strings.HasPrefix(readable, "create"):
+// 			if !store.connected {
+// 				util.ActionEncoder(encoder, util.CreateAction{})
+// 			}
+// 		case strings.HasPrefix(readable, "join"):
+// 			c := strings.Split(readable, " ")
+// 			if len(c) != 2 {
+// 				fmt.Println("Join takes 2 Arguments")
+// 				continue
+// 			}
+// 			v, err := strconv.Atoi(strings.TrimSpace(c[1]))
+// 			if err != nil {
+// 				fmt.Println(err)
+// 				continue
+// 			}
+// 			if !store.connected {
+// 				util.ActionEncoder(encoder, util.JoinAction{RoomID: v})
+// 			}
+// 		case strings.HasPrefix(readable, "quit"):
+// 			break shell
+// 		default:
+// 			fmt.Println("Not an action")
+// 		}
+// 	}
 }
 

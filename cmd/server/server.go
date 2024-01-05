@@ -46,6 +46,7 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 	var roomID int = -1
 
 	defer func() {
+    log.Println("Disconnected")
 		if roomID != -1 {
 			msgch <- util.DeleteMessage{RoomID: roomID}
 		}

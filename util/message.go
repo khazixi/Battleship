@@ -20,6 +20,7 @@ const (
 	ROOMS
 	DELETE
 	INITIALIZE
+  ERROR
 )
 
 type Message interface {
@@ -65,6 +66,10 @@ type InitializerMessage struct {
 	Transmit [5]game.Transmit
 }
 
+type ErrorMessage struct {
+  Err error
+}
+
 func (r RoomMessage) getType() MessageType {
 	return ROOM
 }
@@ -99,6 +104,10 @@ func (d DeleteMessage) getType() MessageType {
 
 func (i InitializerMessage) getType() MessageType {
 	return INITIALIZE
+}
+
+func (e ErrorMessage) getType() MessageType {
+  return ERROR
 }
 
 func MessageDecoder(dec *gob.Decoder) (Message, error) {
