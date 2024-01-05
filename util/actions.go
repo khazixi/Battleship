@@ -16,15 +16,22 @@ const (
 	Create
 	Join
 	Delete
+  Leave
 )
 
 type JoinAction struct{ RoomID int }
 
 type DeleteAction struct{ RoomID int }
 
+type LeaveAction struct{}
+
 type CreateAction struct{}
 
 type ListAction struct{}
+
+func (l LeaveAction) getEvent() ActionType {
+  return Leave
+}
 
 func (a JoinAction) getEvent() ActionType {
 	return Join

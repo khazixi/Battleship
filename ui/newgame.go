@@ -1,34 +1,41 @@
 package ui
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"fmt"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/khazixi/Battelship/util"
+)
 
 type RoomCreatorModel struct {
-  Options
-}
-
-func MakeRoomCreator() RoomCreatorModel {
- return RoomCreatorModel{}
+	Options
+	rooms []int
 }
 
 func (m RoomCreatorModel) Init() tea.Cmd {
-  return nil
+	return tea.Batch(
+		m.Options.Listen(m.Options.msgch),
+		m.Options.Process(m.Options.msgch),
+	)
 }
 
-
 func (m RoomCreatorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-  switch msg := msg.(type) {
-  case tea.KeyMsg:
-    switch msg.String() {
-    case "ctrl+c":
-      return m, tea.Quit
-    case "backspace":
-      return MakeModel(m.Options), nil
-    }
-  }
-  
-  return m, nil
+	switch msg := msg.(type) {
+	case util.Message:
+		fmt.Println(msg)
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
+		case "backspace":
+			return MakeModel(m.Options), m.Send(util.CreateAction{})
+		}
+	}
+
+	return m, nil
 }
 
 func (r RoomCreatorModel) View() string {
-  return border.Render("hi")
+
+	return border.Render("hi")
 }

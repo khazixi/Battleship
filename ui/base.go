@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/khazixi/Battelship/util"
 )
 
 type Base struct {
@@ -13,18 +14,19 @@ type Base struct {
 }
 
 func MakeModel(option Options) Base {
-  return Base{
-    cursor:  0,
-    choices: []string{"New Game", "Join Game", "Exit"},
-    Options: option,
-  }
+	return Base{
+		cursor:  0,
+		choices: []string{"New Game", "Join Game", "Exit"},
+		Options: option,
+	}
 }
 
 func (m Base) Init() tea.Cmd {
 	return tea.Batch(
-    m.Options.Listen(m.Options.msgch),
-    m.Options.Process(m.Options.msgch),
-  )
+		m.Options.Listen(m.Options.msgch),
+		m.Options.Process(m.Options.msgch),
+    m.Options.Send(util.CreateAction{}),
+	)
 }
 
 func (m Base) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -46,12 +48,11 @@ func (m Base) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "Exit":
 				return m, tea.Quit
 			case "New Game":
-				return MakeRoomCreator(), nil
+				return RoomCreatorModel{Options: m.Options}, m.Options.Send(util.CreateAction{})
 			case "Join Game":
-        return RoomViewModel{Options: m.Options}, nil
+				return RoomViewModel{Options: m.Options}, m.Options.Send(util.ListAction{})
 			}
 		}
-
 	}
 
 	return m, nil
@@ -66,6 +67,5 @@ func (m Base) View() string {
 			s += fmt.Sprintf("  %s\n", c)
 		}
 	}
-	// s += fmt.Sprintf("Cursor Position: [%d]\n\n", m.cursor)
 	return border.Render(s)
 }

@@ -25,6 +25,7 @@ func main() {
 	gob.Register(util.JoinAction{})
 	gob.Register(util.ListAction{})
 	gob.Register(util.CreateAction{})
+  gob.Register(util.RoomsMessage{})
 
 	// NOTE: Naive Implimentation prone to race conditions
 	msgch := make(chan util.Message)

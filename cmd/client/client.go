@@ -29,6 +29,7 @@ func main() {
 	gob.Register(util.ListAction{})
 	gob.Register(util.JoinAction{})
 	gob.Register(util.RoomMessage{})
+	gob.Register(util.RoomsMessage{})
 	gob.Register(util.CreateAction{})
 	gob.Register(util.ConfirmationMessage{})
 
@@ -78,54 +79,63 @@ func main() {
 	// 	}
 	// }()
 
-  // NOTE: Command Line Args should be used to pass the IP in the future
-  conn, err := net.Dial("tcp", ":8080")
-  if err != nil {
-    log.Fatal(err)
-  }
+	// NOTE: Command Line Args should be used to pass the IP in the future
+	conn, err := net.Dial("tcp", ":8080")
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	program := tea.NewProgram(ui.MakeModel(ui.MakeOption(conn)))
 
-  program := tea.NewProgram(ui.MakeModel(ui.MakeOption(conn)))
-  _, err = program.Run()
-  if err != nil {
-    fmt.Println("Failed to Create the UI")
-    os.Exit(1)
-  }
+	  if len(os.Getenv("DEBUG")) > 0 {
+		f, err := tea.LogToFile("debug.log", "debug")
+		if err != nil {
+			fmt.Println("fatal:", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+	}
 
-// shell:
-// 	for {
-// 		encoder := gob.NewEncoder(conn)
-// 		fmt.Print(">>> ")
-// 		readable, _ := reader.ReadString('\n')
-//
-// 		fmt.Println(readable)
-//
-// 		switch {
-// 		case strings.HasPrefix(readable, "rooms"):
-// 			util.ActionEncoder(encoder, util.ListAction{})
-// 		case strings.HasPrefix(readable, "create"):
-// 			if !store.connected {
-// 				util.ActionEncoder(encoder, util.CreateAction{})
-// 			}
-// 		case strings.HasPrefix(readable, "join"):
-// 			c := strings.Split(readable, " ")
-// 			if len(c) != 2 {
-// 				fmt.Println("Join takes 2 Arguments")
-// 				continue
-// 			}
-// 			v, err := strconv.Atoi(strings.TrimSpace(c[1]))
-// 			if err != nil {
-// 				fmt.Println(err)
-// 				continue
-// 			}
-// 			if !store.connected {
-// 				util.ActionEncoder(encoder, util.JoinAction{RoomID: v})
-// 			}
-// 		case strings.HasPrefix(readable, "quit"):
-// 			break shell
-// 		default:
-// 			fmt.Println("Not an action")
-// 		}
-// 	}
+	_, err = program.Run()
+	if err != nil {
+		fmt.Println("Failed to Create the UI")
+		os.Exit(1)
+	}
+
+	// shell:
+	//
+	//	for {
+	//		encoder := gob.NewEncoder(conn)
+	//		fmt.Print(">>> ")
+	//		readable, _ := reader.ReadString('\n')
+	//
+	//		fmt.Println(readable)
+	//
+	//		switch {
+	//		case strings.HasPrefix(readable, "rooms"):
+	//			util.ActionEncoder(encoder, util.ListAction{})
+	//		case strings.HasPrefix(readable, "create"):
+	//			if !store.connected {
+	//				util.ActionEncoder(encoder, util.CreateAction{})
+	//			}
+	//		case strings.HasPrefix(readable, "join"):
+	//			c := strings.Split(readable, " ")
+	//			if len(c) != 2 {
+	//				fmt.Println("Join takes 2 Arguments")
+	//				continue
+	//			}
+	//			v, err := strconv.Atoi(strings.TrimSpace(c[1]))
+	//			if err != nil {
+	//				fmt.Println(err)
+	//				continue
+	//			}
+	//			if !store.connected {
+	//				util.ActionEncoder(encoder, util.JoinAction{RoomID: v})
+	//			}
+	//		case strings.HasPrefix(readable, "quit"):
+	//			break shell
+	//		default:
+	//			fmt.Println("Not an action")
+	//		}
+	//	}
 }
-
