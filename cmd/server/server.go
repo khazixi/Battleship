@@ -25,7 +25,7 @@ func main() {
 	gob.Register(util.JoinAction{})
 	gob.Register(util.ListAction{})
 	gob.Register(util.CreateAction{})
-  gob.Register(util.RoomsMessage{})
+	gob.Register(util.RoomsMessage{})
 
 	// NOTE: Naive Implimentation prone to race conditions
 	msgch := make(chan util.Message)
@@ -47,7 +47,7 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 	var roomID int = -1
 
 	defer func() {
-    log.Println("Disconnected")
+		log.Println("Disconnected")
 		if roomID != -1 {
 			msgch <- util.DeleteMessage{RoomID: roomID}
 		}
@@ -78,6 +78,11 @@ func handleConnection(conn net.Conn, msgch chan util.Message) {
 			log.Println("This is a List")
 		case util.DeleteAction:
 			msgch <- util.DeleteMessage{
+				Conn:   conn,
+				RoomID: currentAction.RoomID,
+			}
+		case util.LeaveAction:
+			msgch <- util.LeaveMessage{
 				Conn:   conn,
 				RoomID: currentAction.RoomID,
 			}
@@ -113,8 +118,8 @@ func gameLoop(msgch chan util.Message) {
 					Joined: true,
 					RoomID: message.RoomID,
 				})
-        // WARNING: Maybe move this to its own message
-        roomList.M[message.RoomID].Game.PlayerTurn = game.PLAYER1
+				// WARNING: Maybe move this to its own message
+				roomList.M[message.RoomID].Game.PlayerTurn = game.PLAYER1
 			case util.DeleteMessage:
 				roomList.RemoveRoom(message.RoomID)
 			case util.ListMessage:
@@ -123,13 +128,21 @@ func gameLoop(msgch chan util.Message) {
 				util.MessageEncoder(enc, util.RoomsMessage{Rooms: rooms})
 			case util.ClearMessage:
 				roomList.ClearRooms()
+			case util.LeaveMessage:
+        host := roomList.M[message.RoomID].Host
+        participant := roomList.M[message.RoomID].Participant
+        hostEnc := gob.NewEncoder(host)
+        partEnc := gob.NewEncoder(participant)
+        hostEnc.Encode(util.ExitedMessage{})
+        partEnc.Encode(util.ExitedMessage{})
+        delete(roomList.M, message.RoomID)
 			case util.InitializerMessage:
 				for _, v := range message.Transmit {
 					if message.Conn == roomList.M[message.Room].Host {
 						roomList.M[message.Room].Game.P1.Place(v.Coordinate, v.Piece, v.Direction)
-					} else if (message.Conn == roomList.M[message.Room].Participant) {
+					} else if message.Conn == roomList.M[message.Room].Participant {
 						roomList.M[message.Room].Game.P2.Place(v.Coordinate, v.Piece, v.Direction)
-          }
+					}
 				}
 			}
 

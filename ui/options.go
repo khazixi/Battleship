@@ -9,8 +9,10 @@ import (
 )
 
 type Options struct {
-	msgch chan util.Message
-	conn  net.Conn
+	Room   int
+	Active bool
+	msgch  chan util.Message
+	conn   net.Conn
 }
 
 func MakeOption(conn net.Conn) Options {
@@ -43,9 +45,9 @@ func (o Options) Process(msg chan util.Message) tea.Cmd {
 func (o *Options) Send(action util.Action) tea.Cmd {
 	return func() tea.Msg {
 		encoder := gob.NewEncoder(o.conn)
-    util.ActionEncoder(encoder, action)
+		util.ActionEncoder(encoder, action)
 		return 0
-  }
+	}
 }
 
 func (o Options) Connect(ip string) tea.Cmd {

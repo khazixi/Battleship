@@ -23,6 +23,8 @@ func (m RoomCreatorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case util.Message:
 		fmt.Println(msg)
+  case util.CreateMessage:
+    fmt.Println(msg)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
