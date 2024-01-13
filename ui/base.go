@@ -25,7 +25,7 @@ func (m Base) Init() tea.Cmd {
 	return tea.Batch(
 		m.Options.Listen(m.Options.msgch),
 		m.Options.Process(m.Options.msgch),
-    m.Options.Send(util.CreateAction{}),
+		m.Options.Send(util.ActionMsg{MsgType: util.Action, Action: util.Create}),
 	)
 }
 
@@ -48,9 +48,9 @@ func (m Base) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "Exit":
 				return m, tea.Quit
 			case "New Game":
-				return RoomCreatorModel{Options: m.Options}, m.Options.Send(util.CreateAction{})
+				return RoomCreatorModel{Options: m.Options}, m.Options.Send(util.ActionMsg{MsgType: util.Action, Action: util.Create})
 			case "Join Game":
-				return RoomViewModel{Options: m.Options}, m.Options.Send(util.ListAction{})
+				return RoomViewModel{Options: m.Options}, m.Options.Send(util.ActionMsg{MsgType: util.Action, Action: util.List})
 			}
 		}
 	}

@@ -21,16 +21,15 @@ func (m RoomCreatorModel) Init() tea.Cmd {
 
 func (m RoomCreatorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case util.Message:
+	case util.StatusMsg:
 		fmt.Println(msg)
-  case util.CreateMessage:
-    fmt.Println(msg)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "backspace":
-			return MakeModel(m.Options), m.Send(util.CreateAction{})
+      m.Options.Room = -1
+			return MakeModel(m.Options), m.Send(util.ActionMsg{MsgType: util.Action, Action: util.Leave})
 		}
 	}
 

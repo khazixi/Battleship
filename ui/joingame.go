@@ -8,26 +8,28 @@ import (
 	"github.com/khazixi/Battelship/util"
 )
 
-type RoomViewModel struct{
-  rooms []int
-  Options
+type RoomViewModel struct {
+	rooms []int
+	Options
 }
 
 func (m RoomViewModel) Init() tea.Cmd {
 	return tea.Batch(
-    m.Options.Listen(m.Options.msgch),
-    m.Options.Process(m.Options.msgch),
-  )
+		m.Options.Listen(m.Options.msgch),
+		m.Options.Process(m.Options.msgch),
+	)
 }
 
 func (m RoomViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-  case util.Message:
-    log.Println(msg)
+	case util.ServerMsg:
+		log.Println(msg)
 		switch msg := msg.(type) {
-		case util.RoomsMessage:
-      m.rooms = msg.Rooms
-      return m, nil
+		case util.RoomMsg:
+			m.rooms = msg.Rooms
+			return m, nil
+		case util.StatusMsg:
+			log.Println(msg)
 		}
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -42,14 +44,14 @@ func (m RoomViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (r RoomViewModel) View() string {
-  if len(r.rooms) == 0 {
-    return "No Rooms Available to join"
-  }
+	if len(r.rooms) == 0 {
+		return "No Rooms Available to join"
+	}
 
-  s := ""
-  for _, room := range r.rooms {
-    s += fmt.Sprintf("Room | %d\n", room)
-  }
+	s := ""
+	for _, room := range r.rooms {
+		s += fmt.Sprintf("Room | %d\n", room)
+	}
 
 	return border.Render(s)
 }

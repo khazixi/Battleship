@@ -81,7 +81,3 @@ func (r *RoomList) RemoveRoom(roomID int) {
 func (r *RoomList) ClearRooms() {
 	clear(r.M)
 }
-
-func (r *RoomList) ProcessMessage(msg InitializerMessage) {
-
-}

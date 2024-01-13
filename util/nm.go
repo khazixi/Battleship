@@ -21,7 +21,10 @@ const (
 	Initialize
 	Leave
 	Exit
+	Action
 )
+
+// ---------------------------------------------
 
 // INFO: This is used for sending
 
@@ -44,10 +47,15 @@ type RoomMsg struct {
 	Rooms []int
 }
 
+// WARNING: This exists for the client and is not returned by the server
+type ErrorMsg struct {
+  Err error
+}
+
 // No-Op boilerplate for interfaces because I have no idea what else to do
 func (m StatusMsg) serverMsg() {}
-
 func (r RoomMsg) serverMsg() {}
+func (r ErrorMsg) serverMsg() {}
 
 func ServerMsgEncoder(enc *gob.Encoder, s ServerMsg) {
 	err := enc.Encode(&s)
@@ -61,6 +69,8 @@ func ServerMsgDecoder(dec *gob.Decoder) (ServerMsg, error) {
 	err := dec.Decode(&msg)
 	return msg, err
 }
+
+// ---------------------------------------------
 
 // INFO: This struct is for forwarding messages from connection to game server
 
@@ -85,6 +95,8 @@ type StartMsg struct {
 
 func (c ConnectionMsg) internalMsg() {}
 func (c StartMsg) internalMsg()      {}
+
+// ---------------------------------------------
 
 // INFO: Below are the structs that the client sends to the server
 
@@ -121,5 +133,4 @@ func ClientMsgDecoder(dec *gob.Decoder) (ClientMsg, error) {
 }
 
 func (m ActionMsg) clientMsg() {}
-
-func (m InitMsg) clientMsg() {}
+func (m InitMsg) clientMsg()   {}
