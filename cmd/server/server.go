@@ -49,7 +49,7 @@ func handleConnection(conn net.Conn, msgch chan util.InternalMsg) {
 		if roomID != -1 {
 			msgch <- util.ConnectionMsg{
 				MsgType: util.Delete,
-        Room: roomID,
+				Room:    roomID,
 			}
 		}
 		conn.Close()
@@ -76,32 +76,17 @@ func handleConnection(conn net.Conn, msgch chan util.InternalMsg) {
 
 		case util.InitMsg:
 			// TODO: Impliment game features
-		}
+			msgch <- util.StartMsg{
+				Conn:    conn,
+				InitMsg: currentAction,
+			}
 
-		// switch currentAction := abcd.(type) {
-		// case util.CreateAction:
-		// 	msgch <- util.CreateMessage{Conn: conn}
-		// 	log.Println("This is a creation")
-		// case util.JoinAction:
-		// 	roomID = currentAction.RoomID
-		// 	msgch <- util.JoinMessage{RoomID: roomID}
-		// 	log.Println("This is an Join")
-		// case util.ListAction:
-		// 	msgch <- util.ListMessage{Conn: conn}
-		// 	log.Println("This is a List")
-		// case util.DeleteAction:
-		// 	msgch <- util.DeleteMessage{
-		// 		Conn:   conn,
-		// 		RoomID: currentAction.RoomID,
-		// 	}
-		// case util.LeaveAction:
-		// 	msgch <- util.LeaveMessage{
-		// 		Conn:   conn,
-		// 		RoomID: currentAction.RoomID,
-		// 	}
-		// default:
-		// 	log.Println("This type is unknown", abcd)
-		// }
+		case util.PlaceMsg:
+			msgch <- util.MarkMsg{
+				Conn:     conn,
+				PlaceMsg: currentAction,
+			}
+		}
 	}
 }
 
@@ -120,6 +105,66 @@ func gameLoop(msgch chan util.InternalMsg) {
 						roomList.M[message.Room].Game.P2.Place(v.Coordinate, v.Piece, v.Direction)
 					}
 				}
+			case util.MarkMsg:
+        var hit bool
+				if message.Conn == roomList.M[message.Room].Host {
+					hit = roomList.M[message.Room].Game.P2.Mark(message.Mark)
+				} else if message.Conn == roomList.M[message.Room].Participant {
+					hit = roomList.M[message.Room].Game.P1.Mark(message.Mark)
+				}
+				switch {
+				case roomList.M[message.Room].Game.P1.HasWin(): // TODO: Send the user that they won
+					hostenc := gob.NewEncoder(roomList.M[message.Room].Host)
+					partenc := gob.NewEncoder(roomList.M[message.Room].Participant)
+					util.ServerMsgEncoder(hostenc, util.WinMsg{
+						MsgType: util.GameResult,
+						Winner:  game.PLAYER1,
+					})
+					util.ServerMsgEncoder(partenc, util.WinMsg{
+						MsgType: util.GameResult,
+						Winner:  game.PLAYER1,
+					})
+				case roomList.M[message.Room].Game.P2.HasWin(): // TODO: Send the user that they won
+					hostenc := gob.NewEncoder(roomList.M[message.Room].Host)
+					partenc := gob.NewEncoder(roomList.M[message.Room].Participant)
+					util.ServerMsgEncoder(hostenc, util.WinMsg{
+						MsgType: util.GameResult,
+						Winner:  game.PLAYER2,
+					})
+					util.ServerMsgEncoder(partenc, util.WinMsg{
+						MsgType: util.GameResult,
+						Winner:  game.PLAYER2,
+					})
+
+				case hit: // TODO: Notify the users that a ship was hit
+					hostenc := gob.NewEncoder(roomList.M[message.Room].Host)
+					partenc := gob.NewEncoder(roomList.M[message.Room].Participant)
+					util.ServerMsgEncoder(hostenc, util.HitMsg{
+						MsgType:    util.Hit,
+						Hit:        true,
+						Coordinate: message.Mark,
+					})
+					util.ServerMsgEncoder(partenc, util.HitMsg{
+						MsgType:    util.Hit,
+						Hit:        true,
+						Coordinate: message.Mark,
+					})
+				default: // TODO: Notify the players that a ship was not hit
+					hostenc := gob.NewEncoder(roomList.M[message.Room].Host)
+					partenc := gob.NewEncoder(roomList.M[message.Room].Participant)
+					util.ServerMsgEncoder(hostenc, util.HitMsg{
+						MsgType:    util.Hit,
+						Hit:        false,
+						Coordinate: message.Mark,
+					})
+					util.ServerMsgEncoder(partenc, util.HitMsg{
+						MsgType:    util.Hit,
+						Hit:        false,
+						Coordinate: message.Mark,
+					})
+				}
+				roomList.M[message.Room].Game.P2.HasWin()
+
 			case util.ConnectionMsg:
 				switch message.MsgType {
 				case util.Create:

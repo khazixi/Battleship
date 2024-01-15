@@ -22,6 +22,8 @@ const (
 	Leave
 	Exit
 	Action
+  Hit
+  GameResult
 )
 
 // ---------------------------------------------
@@ -49,13 +51,27 @@ type RoomMsg struct {
 
 // WARNING: This exists for the client and is not returned by the server
 type ErrorMsg struct {
-  Err error
+	Err error
+}
+
+type WinMsg struct {
+	MsgType
+	// NOTE: I am using term here because I defined the players in terms of game.Turn
+	Winner game.Turn
+}
+
+type HitMsg struct {
+  MsgType
+  Hit bool
+  Coordinate game.Coordinate
 }
 
 // No-Op boilerplate for interfaces because I have no idea what else to do
 func (m StatusMsg) serverMsg() {}
-func (r RoomMsg) serverMsg() {}
-func (r ErrorMsg) serverMsg() {}
+func (r RoomMsg) serverMsg()   {}
+func (e ErrorMsg) serverMsg()  {}
+func (w WinMsg) serverMsg()  {}
+func (h HitMsg) serverMsg()  {}
 
 func ServerMsgEncoder(enc *gob.Encoder, s ServerMsg) {
 	err := enc.Encode(&s)
@@ -87,14 +103,18 @@ type ConnectionMsg struct {
 }
 
 type StartMsg struct {
-	MsgType
-	Conn     net.Conn
-	Room     int
-	Transmit [5]game.Transmit
+	Conn net.Conn
+	InitMsg
+}
+
+type MarkMsg struct {
+	Conn net.Conn
+	PlaceMsg
 }
 
 func (c ConnectionMsg) internalMsg() {}
 func (c StartMsg) internalMsg()      {}
+func (c MarkMsg) internalMsg()       {}
 
 // ---------------------------------------------
 
@@ -119,6 +139,12 @@ type InitMsg struct {
 	Transmit [5]game.Transmit
 }
 
+type PlaceMsg struct {
+	MsgType
+	Room int
+	Mark game.Coordinate
+}
+
 func ClientMsgEncoder(enc *gob.Encoder, s ClientMsg) {
 	err := enc.Encode(&s)
 	if err != nil {
@@ -134,3 +160,4 @@ func ClientMsgDecoder(dec *gob.Decoder) (ClientMsg, error) {
 
 func (m ActionMsg) clientMsg() {}
 func (m InitMsg) clientMsg()   {}
+func (m PlaceMsg) clientMsg()  {}
