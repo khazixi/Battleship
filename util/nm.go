@@ -21,9 +21,10 @@ const (
 	Initialize
 	Leave
 	Exit
+	Mark
 	Action
-  Hit
-  GameResult
+	Hit
+	GameResult
 )
 
 // ---------------------------------------------
@@ -61,17 +62,23 @@ type WinMsg struct {
 }
 
 type HitMsg struct {
-  MsgType
-  Hit bool
-  Coordinate game.Coordinate
+	MsgType
+	Hit        bool
+	Coordinate game.Coordinate
+}
+
+type InitializedMsg struct {
+	MsgType
+	Player game.Turn
 }
 
 // No-Op boilerplate for interfaces because I have no idea what else to do
-func (m StatusMsg) serverMsg() {}
-func (r RoomMsg) serverMsg()   {}
-func (e ErrorMsg) serverMsg()  {}
-func (w WinMsg) serverMsg()  {}
-func (h HitMsg) serverMsg()  {}
+func (m StatusMsg) serverMsg()      {}
+func (r RoomMsg) serverMsg()        {}
+func (e ErrorMsg) serverMsg()       {}
+func (w WinMsg) serverMsg()         {}
+func (h HitMsg) serverMsg()         {}
+func (i InitializedMsg) serverMsg() {}
 
 func ServerMsgEncoder(enc *gob.Encoder, s ServerMsg) {
 	err := enc.Encode(&s)

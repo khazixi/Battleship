@@ -27,3 +27,37 @@ func (i Instruction) getCoordinate() (Point, error) {
 	}
 	return Point{}, errors.New("Invalid Insturction")
 }
+
+func ValidInstruction(s string) bool {
+	switch {
+	case s[0] < 'A':
+		fallthrough
+	case s[0] > 'J':
+		fallthrough
+	case s[1] < '0':
+		fallthrough
+	case s[1] > '9':
+		fallthrough
+	case len(s) != 2:
+		return false
+	default:
+		return true
+	}
+}
+
+func ParseInstruction(s string) (Instruction, error) {
+	switch {
+	case s[0] < 'A':
+		fallthrough
+	case s[0] > 'J':
+		fallthrough
+	case s[1] < '0':
+		fallthrough
+	case s[1] > '9':
+		fallthrough
+	case len(s) != 2:
+		return [2]byte{}, errors.New("Failed to properly parse the Instruction")
+	default:
+		return [2]byte{s[0], s[1]}, nil
+	}
+}
