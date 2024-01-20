@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -68,6 +69,7 @@ func handleConnection(conn net.Conn, msgch chan util.InternalMsg) {
 
 		switch currentAction := abcd.(type) {
 		case util.ActionMsg:
+      log.Println("Recieved Action")
 			msgch <- util.ConnectionMsg{
 				MsgType: currentAction.Action,
 				Room:    currentAction.Room,
@@ -168,7 +170,15 @@ func gameLoop(msgch chan util.InternalMsg) {
 			case util.ConnectionMsg:
 				switch message.MsgType {
 				case util.Create:
-					roomList.CreateRoom(message.Conn)
+          room := roomList.CreateRoom(message.Conn)
+          enc := gob.NewEncoder(message.Conn)
+          util.ServerMsgEncoder(enc, util.StatusMsg{
+            MsgType: util.Status,
+            Action: util.Create,
+            Status: true,
+            Room: room,
+          })
+          
 				case util.Join:
 					host, err := roomList.JoinRoom(message.Room, message.Conn)
 					enc := gob.NewEncoder(message.Conn)
@@ -193,8 +203,6 @@ func gameLoop(msgch chan util.InternalMsg) {
 						Status:  true,
 						Room:    message.Room,
 					})
-					// WARNING: Maybe move this to its own message
-					roomList.M[message.Room].Game.PlayerTurn = game.PLAYER1
 				case util.Delete:
 					roomList.RemoveRoom(message.Room)
 				case util.List:

@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"net"
 
@@ -40,11 +41,14 @@ func (r *RoomList) CreateRoom(host net.Conn) int {
 		_, ok = r.M[roomID]
 	}
 
-	r.M[roomID] = Room{State: OPEN, Host: host}
+	r.M[roomID] = Room{State: OPEN, Host: host, Game: game.CreateGame()}
 	return roomID
 }
 
 func (r *RoomList) JoinRoom(roomID int, participant net.Conn) (net.Conn, error) {
+	if r.M == nil {
+		return nil, errors.New("Map is nil")
+	}
 	room, ok := r.M[roomID]
 	if !ok {
 		return nil, errors.New("Attempted to join an empty room")
@@ -59,8 +63,9 @@ func (r *RoomList) JoinRoom(roomID int, participant net.Conn) (net.Conn, error) 
 
 func (r *RoomList) GetRooms() []int {
 	iterated := 0
-	rooms := make([]int, 10)
+	rooms := make([]int, 0, 10)
 	for k, v := range r.M {
+		fmt.Println(r.M)
 		if v.State == OPEN {
 			rooms = append(rooms, k)
 			iterated += 1

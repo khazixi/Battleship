@@ -37,9 +37,9 @@ type Game struct {
 }
 
 type Transmit struct {
-  Piece
-  Direction
-  Coordinate
+	Piece
+	Direction
+	Coordinate
 }
 
 func (p Piece) Size() int {
@@ -108,25 +108,33 @@ func (b *Board) Place(coordinate Coordinate, p Piece, d Direction) error {
 }
 
 func (b *Board) Mark(coordinate Coordinate) bool {
-  point, err := coordinate.getCoordinate()
-  if err != nil {
-    return false
-  }
+	point, err := coordinate.getCoordinate()
+	if err != nil {
+		return false
+	}
 
-  b[point.Y][point.X] += 2
+	b[point.Y][point.X] += 2
 
-  return b[point.Y][point.X] == 3
+	return b[point.Y][point.X] == 3
 }
 
 func (b Board) HasWin() bool {
-  count := 0
+	count := 0
 	for i := 0; i < 10; i++ {
 		for ii := 0; ii < 10; ii++ {
-      if (b[i][ii] == 3) {
-        count++
-      }
+			if b[i][ii] == 3 {
+				count++
+			}
 		}
 	}
 
-  return count == 17
+	return count == 17
+}
+
+func CreateGame() *Game {
+  return &Game{
+    P1: [10][10]byte{},
+    P2: [10][10]byte{},
+    PlayerTurn: PLAYER1,
+  }
 }
