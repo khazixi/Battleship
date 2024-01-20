@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/gob"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -68,13 +69,47 @@ func main() {
 			fmt.Println(command)
 			switch command[0] {
 			case "create":
-				store.createCmd(command)
+				err = store.createCmd(command)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					store.processServerMsg()
+				}
 			case "join":
-				store.joinCmd(command)
+				err = store.joinCmd(command)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					store.processServerMsg()
+				}
 			case "mark":
-				store.markCmd(command)
+				err = store.markCmd(command)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					store.processServerMsg()
+				}
 			case "place":
-				store.placeCmd(command)
+				err = store.placeCmd(command)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					store.processServerMsg()
+				}
+			case "list":
+				err = store.listCmd(command)
+				if err != nil {
+					fmt.Println(err)
+				} else {
+					store.processServerMsg()
+				}
+			case "help":
+				fmt.Println("Usage: create")
+				fmt.Println("Usage: join <room>")
+				fmt.Println("Usage: mark <coordinate>")
+				fmt.Println("Usage: place <piece> <direction> <coordinate>")
+			default:
+				fmt.Println(command[0], " is not a command")
 			}
 			fmt.Print(">>> ")
 		}
@@ -83,10 +118,24 @@ func main() {
 
 }
 
-func (s Store) createCmd(command []string) {
+func (s Store) listCmd(command []string) error {
 	if len(command) != 1 {
-		fmt.Println("Usage: create")
-		return
+		return errors.New("Usage: list")
+	}
+
+	encoder := gob.NewEncoder(s.conn)
+	util.ClientMsgEncoder(encoder, util.ActionMsg{
+		MsgType: util.Action,
+		Action:  util.Create,
+		Room:    -1,
+	})
+
+	return nil
+}
+
+func (s Store) createCmd(command []string) error {
+	if len(command) != 1 {
+		return errors.New("Usage: create")
 	}
 	encoder := gob.NewEncoder(s.conn)
 	util.ClientMsgEncoder(encoder, util.ActionMsg{
@@ -94,16 +143,18 @@ func (s Store) createCmd(command []string) {
 		Action:  util.Create,
 		Room:    -1,
 	})
+
+	return nil
 }
 
-func (s Store) joinCmd(command []string) {
+func (s Store) joinCmd(command []string) error {
 	if len(command) != 2 {
-		fmt.Println("Usage: join <room>")
+		return errors.New("Usage: join <room>")
 	}
 	room, err := strconv.ParseInt(command[1], 10, 64)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 	encoder := gob.NewEncoder(s.conn)
 	util.ClientMsgEncoder(encoder, util.ActionMsg{
@@ -111,17 +162,18 @@ func (s Store) joinCmd(command []string) {
 		Action:  util.Join,
 		Room:    int(room),
 	})
+
+	return nil
 }
 
-func (s Store) markCmd(command []string) {
+func (s Store) markCmd(command []string) error {
 	if len(command) != 2 {
-		fmt.Println("Usage: mark <coordinate>")
+		return errors.New("Usage: mark <coordinate>")
 	}
 
 	instruction, err := game.ParseInstruction(command[1])
 	if err != nil {
-		fmt.Println("Failed to properly parse the instruction")
-		return
+		return errors.New("Failed to properly parse the instruction")
 	}
 
 	encoder := gob.NewEncoder(s.conn)
@@ -130,14 +182,15 @@ func (s Store) markCmd(command []string) {
 		Room:    s.room,
 		Mark:    instruction,
 	})
+
+	return nil
 }
 
-func (s *Store) placeCmd(command []string) {
+func (s *Store) placeCmd(command []string) error {
 	var piece game.Piece
 	var direction game.Direction
 	if len(command) != 4 {
-		fmt.Println("Usage: place <piece> <direction> <coordinate>")
-		return
+		return errors.New("Usage: place <piece> <direction> <coordinate>")
 	}
 
 	switch command[1] {
@@ -152,9 +205,7 @@ func (s *Store) placeCmd(command []string) {
 	case "battleship":
 		piece = game.BATTLESHIP
 	default:
-		fmt.Println("Incorrect Ship")
-		fmt.Println("Must be either: carrier, destroyer, patrolboat, submarine, battleship")
-		return
+		return errors.New("Incorrect Ship\nMust be either: carrier, destroyer, patrolboat, submarine, battleship")
 	}
 
 	switch command[2] {
@@ -167,21 +218,19 @@ func (s *Store) placeCmd(command []string) {
 	case "down":
 		direction = game.DOWN
 	default:
-		fmt.Println("Incorrect Direction")
-		fmt.Println("Must be either: left, up, right, down")
-		return
+		return errors.New("Incorrect Direction\nMust be either: left, up, right, down")
 	}
 
 	instruction, err := game.ParseInstruction(command[3])
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 
 	err = s.board.Place(instruction, piece, direction)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 
 	s.placed = append(s.placed, game.Transmit{Coordinate: instruction, Piece: piece, Direction: direction})
@@ -189,11 +238,13 @@ func (s *Store) placeCmd(command []string) {
 	if len(s.placed) == 5 && s.room != -1 {
 		encoder := gob.NewEncoder(s.conn)
 		util.ClientMsgEncoder(encoder, util.InitMsg{
-      MsgType: util.Initialize,
-      Room: s.room,
-      Transmit: [5]game.Transmit(s.placed),
-    })
+			MsgType:  util.Initialize,
+			Room:     s.room,
+			Transmit: [5]game.Transmit(s.placed),
+		})
 	}
+
+	return nil
 }
 
 func (s *Store) processServerMsg() {
