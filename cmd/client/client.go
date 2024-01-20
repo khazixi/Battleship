@@ -66,7 +66,6 @@ func main() {
 		for scnr.Scan() {
 			str := scnr.Text()
 			command := strings.Fields(str)
-			fmt.Println(command)
 			switch command[0] {
 			case "create":
 				err = store.createCmd(command)
@@ -126,7 +125,7 @@ func (s Store) listCmd(command []string) error {
 	encoder := gob.NewEncoder(s.conn)
 	util.ClientMsgEncoder(encoder, util.ActionMsg{
 		MsgType: util.Action,
-		Action:  util.Create,
+		Action:  util.List,
 		Room:    -1,
 	})
 
@@ -250,6 +249,7 @@ func (s *Store) placeCmd(command []string) error {
 func (s *Store) processServerMsg() {
 	decoder := gob.NewDecoder(s.conn)
 	msg, err := util.ServerMsgDecoder(decoder)
+  fmt.Println(msg)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -259,8 +259,8 @@ func (s *Store) processServerMsg() {
 			s.room = msg.Room
 		}
 	case util.RoomMsg:
-		for room := range msg.Rooms {
-			fmt.Println("Room | ", room)
+		for _, room := range msg.Rooms {
+			fmt.Println("Room |", room)
 		}
 	case util.WinMsg:
 		fmt.Println("won")
@@ -271,6 +271,6 @@ func (s *Store) processServerMsg() {
 			fmt.Println("You were not hit")
 		}
 	case util.InitializedMsg:
-		msg.Player = msg.Player
+		s.player = msg.Player
 	}
 }
