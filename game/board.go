@@ -4,7 +4,7 @@ import "errors"
 
 type Turn bool
 
-type Piece int
+type Piece byte
 
 type Direction int
 
@@ -14,10 +14,19 @@ const (
 )
 
 const (
+	// 5 Spaces Long
 	CARRIER Piece = iota
+
+	// 4 Spaces Long
 	BATTLESHIP
+
+	// 3 Spaces Long
 	DESTROYER
+
+	// 3 Spaces Long
 	SUBMARINE
+
+	// 2 Spaces Long
 	PATROLBOAT
 )
 
@@ -42,7 +51,7 @@ type Transmit struct {
 	Coordinate
 }
 
-func (p Piece) Size() int {
+func (p Piece) Size() byte {
 	switch p {
 	case CARRIER:
 		return 5
@@ -59,11 +68,73 @@ func (p Piece) Size() int {
 	}
 }
 
+func (b *Board) Reset() {
+	for i := 0; i < 10; i++ {
+		for ii := 0; ii < 10; ii++ {
+			b[i][ii] = 0
+		}
+	}
+}
+
+func (b *Board) Validate(coordinate Coordinate, p Piece, d Direction) bool {
+	switch d {
+	case LEFT:
+		if p.Size() > coordinate.getX() {
+			return false
+		} else {
+			for cur := coordinate.getX(); cur > p.Size()-coordinate.getX(); cur-- {
+				if b[coordinate.getY()][coordinate.getX()] == 1 {
+					return false
+				}
+			}
+		}
+	case RIGHT:
+		if p.Size()+coordinate.getX() > 9 {
+			return false
+		} else {
+			for cur := coordinate.getX(); cur < p.Size()+coordinate.getX(); cur++ {
+				if b[coordinate.getY()][coordinate.getX()] == 1 {
+					return false
+				}
+			}
+		}
+
+	case UP:
+		if p.Size() > coordinate.getY() {
+			return false
+		} else {
+			for cur := coordinate.getY(); cur > p.Size()-coordinate.getY(); cur-- {
+				if b[coordinate.getY()][coordinate.getX()] == 1 {
+					return false
+				}
+			}
+		}
+
+	case DOWN:
+		if p.Size()+coordinate.getY() > 9 {
+			return false
+		} else {
+			for cur := coordinate.getY(); cur < p.Size()+coordinate.getY(); cur++ {
+				if b[coordinate.getY()][coordinate.getX()] == 1 {
+					return false
+				}
+			}
+
+		}
+	}
+
+	return true
+}
+
 func (b *Board) Place(coordinate Coordinate, p Piece, d Direction) error {
 	point, err := coordinate.getCoordinate()
 	if err != nil {
 		return err
 	}
+
+  if !b.Validate(coordinate, p, d) {
+    return errors.New("Invalid Placement for the board")
+  }
 
 	// WARNING: Hopefully this is correct I don't know
 	switch d {
@@ -132,9 +203,9 @@ func (b Board) HasWin() bool {
 }
 
 func CreateGame() *Game {
-  return &Game{
-    P1: [10][10]byte{},
-    P2: [10][10]byte{},
-    PlayerTurn: PLAYER1,
-  }
+	return &Game{
+		P1:         [10][10]byte{},
+		P2:         [10][10]byte{},
+		PlayerTurn: PLAYER1,
+	}
 }

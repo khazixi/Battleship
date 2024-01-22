@@ -4,12 +4,14 @@ import "errors"
 
 type Coordinate interface {
 	getCoordinate() (Point, error)
+  getX() byte
+  getY() byte
 }
 
 type Instruction [2]byte
 
 type Point struct {
-	Y, X int
+	Y, X byte
 }
 
 func (p Point) getCoordinate() (Point, error) {
@@ -21,28 +23,27 @@ func (p Point) getCoordinate() (Point, error) {
 	return p, nil
 }
 
+func (p Point) getX() byte {
+  return p.X
+}
+
+func (p Point) getY() byte {
+  return p.Y
+}
+
 func (i Instruction) getCoordinate() (Point, error) {
 	if ('A' <= i[0] && i[0] <= 'J') && ('0' <= i[1] && i[1] <= '9') {
-		return Point{X: int(i[1] - '0'), Y: int(i[1] - 'A')}, nil
+		return Point{X: i[1] - '0', Y: i[1] - 'A'}, nil
 	}
 	return Point{}, errors.New("Invalid Insturction")
 }
 
-func ValidInstruction(s string) bool {
-	switch {
-	case s[0] < 'A':
-		fallthrough
-	case s[0] > 'J':
-		fallthrough
-	case s[1] < '0':
-		fallthrough
-	case s[1] > '9':
-		fallthrough
-	case len(s) != 2:
-		return false
-	default:
-		return true
-	}
+func (i Instruction) getX() byte {
+  return i[1] - '0'
+}
+
+func (i Instruction) getY() byte {
+  return i[0] - 'A'
 }
 
 func ParseInstruction(s string) (Instruction, error) {
