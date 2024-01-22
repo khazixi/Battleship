@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -69,7 +68,7 @@ func handleConnection(conn net.Conn, msgch chan util.InternalMsg) {
 
 		switch currentAction := abcd.(type) {
 		case util.ActionMsg:
-      log.Println("Recieved Action")
+			log.Println("Recieved Action")
 			msgch <- util.ConnectionMsg{
 				MsgType: currentAction.Action,
 				Room:    currentAction.Room,
@@ -99,16 +98,43 @@ func gameLoop(msgch chan util.InternalMsg) {
 		case message := <-msgch:
 			switch message := message.(type) {
 			case util.StartMsg:
-				// TODO: Impliment
 				for _, v := range message.Transmit {
 					if message.Conn == roomList.M[message.Room].Host {
-						roomList.M[message.Room].Game.P1.Place(v.Coordinate, v.Piece, v.Direction)
+            err := roomList.M[message.Room].Game.P1.Place(v.Coordinate, v.Piece, v.Direction)
+						if err != nil {
+							enc := gob.NewEncoder(message.Conn)
+							util.ServerMsgEncoder(enc, util.StatusMsg{
+								MsgType: util.Status,
+								Action:  util.Initialize,
+								Status:  false,
+								Room:    message.Room,
+							})
+						}
+            roomList.M[message.Room].Game.P1.Reset()
 					} else if message.Conn == roomList.M[message.Room].Participant {
-						roomList.M[message.Room].Game.P2.Place(v.Coordinate, v.Piece, v.Direction)
+            err := roomList.M[message.Room].Game.P2.Place(v.Coordinate, v.Piece, v.Direction)
+						if err != nil {
+							enc := gob.NewEncoder(message.Conn)
+							util.ServerMsgEncoder(enc, util.StatusMsg{
+								MsgType: util.Status,
+								Action:  util.Initialize,
+								Status:  false,
+								Room:    message.Room,
+							})
+						}
+            roomList.M[message.Room].Game.P2.Reset()
 					}
 				}
+
+				enc := gob.NewEncoder(message.Conn)
+				util.ServerMsgEncoder(enc, util.StatusMsg{
+					MsgType: util.Status,
+					Action:  util.Initialize,
+					Status:  true,
+					Room:    message.Room,
+				})
 			case util.MarkMsg:
-        var hit bool
+				var hit bool
 				if message.Conn == roomList.M[message.Room].Host {
 					hit = roomList.M[message.Room].Game.P2.Mark(message.Mark)
 				} else if message.Conn == roomList.M[message.Room].Participant {
@@ -170,15 +196,15 @@ func gameLoop(msgch chan util.InternalMsg) {
 			case util.ConnectionMsg:
 				switch message.MsgType {
 				case util.Create:
-          room := roomList.CreateRoom(message.Conn)
-          enc := gob.NewEncoder(message.Conn)
-          util.ServerMsgEncoder(enc, util.StatusMsg{
-            MsgType: util.Status,
-            Action: util.Create,
-            Status: true,
-            Room: room,
-          })
-          
+					room := roomList.CreateRoom(message.Conn)
+					enc := gob.NewEncoder(message.Conn)
+					util.ServerMsgEncoder(enc, util.StatusMsg{
+						MsgType: util.Status,
+						Action:  util.Create,
+						Status:  true,
+						Room:    room,
+					})
+
 				case util.Join:
 					host, err := roomList.JoinRoom(message.Room, message.Conn)
 					enc := gob.NewEncoder(message.Conn)
@@ -205,6 +231,13 @@ func gameLoop(msgch chan util.InternalMsg) {
 					})
 				case util.Delete:
 					roomList.RemoveRoom(message.Room)
+					enc := gob.NewEncoder(message.Conn)
+					util.ServerMsgEncoder(enc, util.StatusMsg{
+						MsgType: util.Status,
+						Action:  util.Delete,
+						Status:  true,
+						Room:    message.Room,
+					})
 				case util.List:
 					rooms := roomList.GetRooms()
 					enc := gob.NewEncoder(message.Conn)

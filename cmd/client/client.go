@@ -60,7 +60,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		store := Store{conn: conn}
+    store := Store{conn: conn, board: [10][10]byte{}, placed: make([]game.Transmit, 0, 5)}
 		fmt.Print(">>> ")
 		scnr := bufio.NewScanner(os.Stdin)
 		for scnr.Scan() {
