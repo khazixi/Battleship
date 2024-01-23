@@ -1,6 +1,8 @@
 package game
 
-import "errors"
+import (
+	"errors"
+)
 
 type Turn bool
 
@@ -76,54 +78,59 @@ func (b *Board) Reset() {
 	}
 }
 
-func (b *Board) Validate(coordinate Coordinate, p Piece, d Direction) bool {
+func (b *Board) Validate(coordinate Coordinate, p Piece, d Direction) error {
+	point, err := coordinate.getCoordinate()
+	if err != nil {
+		return err
+	}
 	switch d {
 	case LEFT:
-		if p.Size() > coordinate.getX() {
-			return false
+		if p.Size()-1 > point.X {
+			return errors.New("Placement of Piece is out of range")
 		} else {
-			for cur := coordinate.getX(); cur > p.Size()-coordinate.getX(); cur-- {
-				if b[coordinate.getY()][coordinate.getX()] == 1 {
-					return false
+			for cur := point.X; cur > p.Size()-point.X-1; cur-- {
+				if b[point.Y][point.X] == 1 {
+					return errors.New("Other Boat Detected")
 				}
 			}
 		}
+
 	case RIGHT:
-		if p.Size()+coordinate.getX() > 9 {
-			return false
+		if p.Size()+point.X-1 > 9 {
+			return errors.New("Other Boat Detected")
 		} else {
-			for cur := coordinate.getX(); cur < p.Size()+coordinate.getX(); cur++ {
-				if b[coordinate.getY()][coordinate.getX()] == 1 {
-					return false
+			for cur := point.X; cur < p.Size()+point.X; cur++ {
+				if b[point.Y][point.X] == 1 {
+					return errors.New("Other Boat Detected")
 				}
 			}
 		}
 
 	case UP:
-		if p.Size() > coordinate.getY() {
-			return false
+		if p.Size()-1 > point.Y {
+			return errors.New("Other Boat Detected")
 		} else {
-			for cur := coordinate.getY(); cur > p.Size()-coordinate.getY(); cur-- {
-				if b[coordinate.getY()][coordinate.getX()] == 1 {
-					return false
+			for cur := point.Y; cur > p.Size()-point.Y; cur-- {
+				if b[point.Y][point.X] == 1 {
+					return errors.New("Other Boat Detected")
 				}
 			}
 		}
 
 	case DOWN:
-		if p.Size()+coordinate.getY() > 9 {
-			return false
+		if p.Size()+point.Y-1 > 9 {
+			return errors.New("Other Boat Detected")
 		} else {
-			for cur := coordinate.getY(); cur < p.Size()+coordinate.getY(); cur++ {
-				if b[coordinate.getY()][coordinate.getX()] == 1 {
-					return false
+			for cur := point.Y; cur < p.Size()+point.Y; cur++ {
+				if b[point.Y][point.X] == 1 {
+					return errors.New("Other Boat Detected")
 				}
 			}
 
 		}
 	}
 
-	return true
+	return nil
 }
 
 func (b *Board) Place(coordinate Coordinate, p Piece, d Direction) error {
@@ -132,9 +139,11 @@ func (b *Board) Place(coordinate Coordinate, p Piece, d Direction) error {
 		return err
 	}
 
-  if !b.Validate(coordinate, p, d) {
-    return errors.New("Invalid Placement for the board")
-  }
+	err = b.Validate(coordinate, p, d)
+
+	if err != nil {
+		return err
+	}
 
 	// WARNING: Hopefully this is correct I don't know
 	switch d {
@@ -148,26 +157,14 @@ func (b *Board) Place(coordinate Coordinate, p Piece, d Direction) error {
 		}
 
 	case RIGHT:
-		if point.X+p.Size()-1 < 0 {
-			return errors.New("Piece Cannot be placed in this direction")
-		}
-
 		for i := point.X; i < point.X+p.Size(); i++ {
 			b[point.Y][i] = 1
 		}
 	case DOWN:
-		if point.Y-p.Size()+1 < 0 {
-			return errors.New("Piece Cannot be placed in this direction")
-		}
-
 		for i := point.Y; i > point.Y-p.Size(); i-- {
 			b[i][point.X] = 1
 		}
 	case UP:
-		if point.Y+p.Size()-1 < 0 {
-			return errors.New("Piece Cannot be placed in this direction")
-		}
-
 		for i := point.Y; i < point.Y+p.Size(); i++ {
 			b[i][point.X] = 1
 		}

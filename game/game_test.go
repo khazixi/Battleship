@@ -25,9 +25,18 @@ func TestInstruction(t *testing.T) {
 	if in1m != in1 {
 		t.Fatal("Parsed Instruction should be equivalent to the actual function")
 	}
+
+	in2 := Instruction{'A', '8'}
+	p2, err := in2.getCoordinate()
+	p2m := Point{Y: 0, X: 8}
+	if p2 != p2m {
+		t.Log(p2)
+		t.Log("Parse Failure")
+		t.Fail()
+	}
 }
 
-func TestBoard(t *testing.T) {
+func TestPlacement(t *testing.T) {
 	var board Board
 
 	for ridx, row := range board {
@@ -43,15 +52,43 @@ func TestBoard(t *testing.T) {
 		t.Fatal("Placement should not fail")
 	}
 
-  for i := 0; i < int(PATROLBOAT.Size()); i++ {
-    if board[0][i] != 1 {
-      t.Fatal("Failed to properly mark spot")
-    }
+	for i := 0; i < int(PATROLBOAT.Size()); i++ {
+		if board[0][i] != 1 {
+			t.Fatal("Failed to properly mark spot")
+		}
+	}
+
+	err = board.Place(Point{0, 0}, SUBMARINE, RIGHT)
+	if err == nil {
+		t.Log(board)
+		t.Fatal("Placement should not be possible")
+	}
+}
+
+func testValidation(t *testing.T) {
+  var board Board
+  err := board.Validate(Instruction{'A', '1'}, PATROLBOAT, LEFT)
+	if err != nil {
+		t.Log("Validation should have no error on empty board")
+		t.Fail()
+	}
+
+	err = board.Validate(Instruction{'A', '8'}, PATROLBOAT, RIGHT)
+	if err != nil {
+		t.Log(board[0])
+		t.Log("Validation should have no error on empty board")
+		t.Fail()
+	}
+
+  err = board.Place(Instruction{'A', '1'}, PATROLBOAT, LEFT)
+  if err != nil {
+    t.Log("This Placement should be valid")
+    t.Fail()
   }
 
-  err = board.Place(Point{0,0}, SUBMARINE, RIGHT)
-  if err == nil {
-    t.Log(board)
-    t.Fatal("Placement should not be possible")
-  }
+  err = board.Validate(Instruction{'A', '1'}, PATROLBOAT, LEFT)
+	if err == nil {
+		t.Log("Validation should have an error nonempty spots")
+		t.Fail()
+	}
 }
